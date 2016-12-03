@@ -8,6 +8,11 @@
       "Type" : "AWS::EC2::Subnet::Id",
       "Description" : "Public Subnet for the cluster"
     },
+    "Region" : {
+      "Type" : "string",
+      "Default" : "eu-central-1",
+      "Description" : "Pick a region"
+    },
     "AvailabilityZone" : {
       "Type" : "AWS::EC2::AvailabilityZone::Name",
       "Default" : "eu-central-1b",
@@ -251,6 +256,25 @@
         ]]}}
       },
       "DependsOn" : ["JenkinsSecurityGroup", "JenkinsMasterProfile"]
+    },
+    "RecoverJenkinsMasterAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Recover Jenkins Master when underlying hardware fails",
+        "Namespace": "AWS/EC2",
+        "MetricName": "StatusCheckFailed_System",
+        "Statistic": "Minimum",
+        "Period": "60",
+        "EvaluationPeriods": "5",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Threshold": "0",
+        "AlarmActions": { "Fn::Join" : [ "", ["arn:aws:automate:", { "Ref": "Region" }, ":ec2:recover"]]},
+        "Dimensions": [{
+          "Name": "InstanceId",
+          "Value": {"Ref": "JenkinsMaster"}
+        }]
+      },
+      "DependsOn" : ["JenkinsMaster"]
     },
     "JenkinsSlaveRole": {
       "Type": "AWS::IAM::Role",
