@@ -1,4 +1,4 @@
-# Jenkins on AWS - An opinionated guide
+# Jenkins on AWS - An opinionated guide (WIP)
 
 There are many ways to deploy Jenkins on AWS, in this case we are using:
  * Packer and Puppet to create AMIs
