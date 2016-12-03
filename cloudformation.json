@@ -4,6 +4,15 @@
       "Type" : "AWS::EC2::VPC::Id",
       "Description" : "VPC to use"
     },
+    "JenkinsPublicSubnet" : {
+      "Type" : "AWS::EC2::Subnet::Id",
+      "Description" : "Public Subnet for the cluster"
+    },
+    "AvailabilityZone" : {
+      "Type" : "AWS::EC2::AvailabilityZone::Name",
+      "Default" : "eu-central-1b",
+      "Description" : "Pick an availability zone"
+    },
     "SnapshotId" : {
       "Type" : "String",
       "Description" : "EBS snapshot that contains the Jenkins master data"
@@ -12,20 +21,11 @@
       "Type" : "String",
       "Default" : "t2.medium",
       "AllowedValues" : ["t2.medium", "m4.large", "m4.xlarge", "m4.2xlarge"],
-      "Description" : "Instance type of the jenkins master"
+      "Description" : "Instance type to use for the Jenkins master"
     },
-   "MasterInstanceAMI" : {
+    "MasterInstanceAMI" : {
       "Type" : "AWS::EC2::Image::Id",
       "Description" : "AMI to use for the Jenkins master."
-    },
-    "AvailabilityZone" : {
-      "Type" : "AWS::EC2::AvailabilityZone::Name",
-      "Default" : "eu-central-1b",
-      "Description" : "Pick an availability zone"
-    },
-    "JenkinsPublicSubnet" : {
-      "Type" : "AWS::EC2::Subnet::Id",
-      "Description" : "Public Subnet for the cluster"
     },
     "JenkinsMasterKeyName" : {
       "Type" : "AWS::EC2::KeyPair::KeyName",
