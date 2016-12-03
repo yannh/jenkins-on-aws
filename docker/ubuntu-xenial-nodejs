@@ -1,0 +1,14 @@
+FROM ubuntu:xenial
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN \
+  apt-get update && \
+  apt-get -y upgrade && \
+  apt-get -y install -y curl devscripts build-essential git debhelper && \
+  curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
+  apt-get -y install nodejs && \
+  apt-get -y autoremove && \
+  apt-get -y clean
+
+CMD ["bash"]
