@@ -1,0 +1,175 @@
+{
+  "Parameters" : {
+    "VPCID" : {
+      "Type" : "AWS::EC2::VPC::Id",
+      "Description" : "VPC to use"
+    },
+    "SnapshotId" : {
+      "Type" : "String",
+      "Description" : "EBS snapshot that contains the Jenkins master data"
+    },
+    "MasterInstanceType" : {
+      "Type" : "String",
+      "Default" : "t2.medium",
+      "AllowedValues" : ["t2.medium", "m4.large", "m4.xlarge", "m4.2xlarge"],
+      "Description" : "Instance type of the jenkins master"
+    },
+   "MasterInstanceAMI" : {
+      "Type" : "AWS::EC2::Image::Id",
+      "Description" : "AMI to use for the Jenkins master."
+    },
+    "AvailabilityZone" : {
+      "Type" : "AWS::EC2::AvailabilityZone::Name",
+      "Default" : "eu-central-1b",
+      "Description" : "Pick an availability zone"
+    },
+    "JenkinsPublicSubnet" : {
+      "Type" : "AWS::EC2::Subnet::Id",
+      "Description" : "Public Subnet for the cluster"
+    },
+    "JenkinsMasterKeyName" : {
+      "Type" : "AWS::EC2::KeyPair::KeyName",
+      "Description" : "Key name of the jenkins master node."
+    }
+  },
+  "Resources": {
+    "JenkinsSecurityGroup": {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+         "GroupDescription" : "Security group for jenkins cluster",
+         "VpcId" : {"Ref": "VPCID"}
+      }
+    },
+    "JenkinsEBS": {
+       "Type":"AWS::EC2::Volume",
+       "Properties" : {
+         "AvailabilityZone" : {"Ref": "AvailabilityZone"},
+         "Encrypted" : false,
+         "SnapshotId" : { "Ref" : "SnapshotId" },
+         "VolumeType" : "standard"
+       },
+      "DeletionPolicy" : "Snapshot"
+    },
+    "JenkinsMasterIAMRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "jenkinsmasterpolicy",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:createKeyPair",
+                    "ec2:CreateSnapshot",
+                    "ec2:DescribeAvailabilityZones",
+                    "ec2:DescribeImages",
+                    "ec2:DescribeInstances",
+                    "ec2:DescribeSnapshots",
+                    "ec2:DescribeTags",
+                    "ec2:DescribeKeyPairs",
+                    "ec2:DescribeRegions",
+                    "ec2:DescribeSecuritygroups",
+                    "ec2:DescribeSubnets",
+                    "ec2:DescribeSpotInstanceRequests",
+                    "ec2:DescribeVolumeAttribute",
+                    "ec2:DescribeVolumeStatus",
+                    "ec2:DescribeVolumes"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:CreateTags"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                     "ec2:RunInstances"
+                  ],
+                  "Resource": [
+                    "arn:aws:ec2:*::image/ami-*",
+                    { "Fn::Join" : [ "", [ "arn:aws:ec2:*:", {"Ref": "AWS::AccountId"}, ":instance/*"]]},
+                    { "Fn::Join" : [ "", [ "arn:aws:ec2:*:", {"Ref": "AWS::AccountId"}, ":subnet/*"]]},
+                    { "Fn::Join" : [ "", [ "arn:aws:ec2:*:", {"Ref": "AWS::AccountId"}, ":network-interface/*"]]},
+                    { "Fn::Join" : [ "", [ "arn:aws:ec2:*:", {"Ref": "AWS::AccountId"}, ":volume/*"]]},
+                    { "Fn::Join" : [ "", [ "arn:aws:ec2:*:", {"Ref": "AWS::AccountId"}, ":key-pair/*"]]},
+                    { "Fn::Join" : [ "", [ "arn:aws:ec2:*:", {"Ref": "AWS::AccountId"}, ":security-group/*"]]}
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+   "JenkinsMasterProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "JenkinsMasterIAMRole"
+          }
+        ]
+      },
+      "DependsOn" : ["JenkinsMasterIAMRole"]
+    },
+    "JenkinsMaster": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone" : {"Ref": "AvailabilityZone"},
+        "BlockDeviceMappings" : [{
+          "DeviceName": "/dev/sda1",
+          "Ebs": { "VolumeSize" : "20"}
+        }],
+        "EbsOptimized" : false,
+        "IamInstanceProfile": {"Ref": "JenkinsMasterProfile"},
+        "ImageId" : {"Ref": "MasterInstanceAMI" },
+        "InstanceType" : {"Ref": "MasterInstanceType"},
+        "KeyName" : {"Ref": "JenkinsMasterKeyName"},
+        "Monitoring" : false,
+        "SecurityGroupIds" : [{"Ref": "JenkinsSecurityGroup"}],
+        "SubnetId": {"Ref": "JenkinsPublicSubnet"},
+        "Volumes" : [{ "VolumeId" : { "Ref" : "JenkinsEBS" }, "Device" : "/dev/xvdd" } ],
+        "UserData" : { "Fn::Base64" : { "Fn::Join" : [ "", [
+          "#cloud-config\n",
+          "mounts:\n",
+          " - [ \"/dev/xvdd\", \"/var/lib/jenkins\", \"ext4\", \"defaults\", \"0\", \"0\" ]\n",
+          "runcmd:\n",
+          " - [ \"chown\", \"jenkins:jenkins\", \"/var/lib/jenkins\" ]\n",
+          " - [ \"chown\", \"jenkins:jenkins\", \"/var/lib/jenkins\" ]\n",
+          { "Fn::Join" : [ "", [" - echo VOLUMEID=", { "Ref": "JenkinsEBS" }, ">/etc/ebs-snapshot.cfg\n"]]},
+          { "Fn::Join" : [ "", [" - echo CLUSTER=", { "Ref": "AWS::StackName" }, ">>/etc/ebs-snapshot.cfg\n"]]}
+        ]]}}
+      },
+      "DependsOn" : ["JenkinsSecurityGroup", "JenkinsMasterProfile"]
+    }
+  },
+  "Outputs" : {
+    "JenkinsMasterIP" : {
+      "Description" : "Jenkins Master IP",
+      "Value" : {"Fn::GetAtt" : [ "JenkinsMaster" , "PublicIp" ]}
+    }
+  }
+
