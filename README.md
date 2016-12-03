@@ -1,10 +1,11 @@
-# Jenkins on AWS - An opinionated guide (WIP)
+# Jenkins on AWS - An opinionated guide
 
 There are many ways to deploy Jenkins on AWS, in this case we are using:
  * Packer and Puppet to create AMIs
  * Cloudformation to build the Stack
  * The EC2 plugin to automatically create slaves
  * Docker to build software
+ * Lambda functions to handle snapshot backups / backup cleaning
 
 ## Requirements
 
@@ -22,5 +23,11 @@ Create the AMIs:
     export AWS_SECRET_KEy=YOUR_SECRET_KEY
     PROFILE=master packer build packer/jenkins-ami.json
     PROFILE=slave packer build packer/jenkins-ami.json
+
+## Building the Docker images
+
+There are samples Dockerfiles in the docker/ folder, to build:
+
+    docker build -f docker/ubuntu-xenial-nodejs .
 
 ## Create the Cloudformation stack
