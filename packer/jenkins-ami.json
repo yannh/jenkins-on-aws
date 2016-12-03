@@ -1,0 +1,45 @@
+{
+  "variables": {
+    "aws_access_key_id": "{{env `AWS_ACCESS_KEY_ID`}}",
+    "aws_secret_key": "{{env `AWS_SECRET_KEY`}}",
+    "profile": "{{env `PROFILE`}}",
+    "puppet_path": "./puppet"
+  },
+  "builders": [{
+    "ami_name": "ubuntu-xenial-jenkins-{{user `profile`}}",
+    "type": "amazon-ebs",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "eu-central-1",
+    "source_ami": "ami-df02c5b0",
+    "instance_type": "m4.large",
+    "ssh_username": "ubuntu",
+    "ami_description": "Jenkins on Ubuntu 16.04",
+    "force_deregister": true,
+    "ebs_optimized": true
+  }],
+  "provisioners": [{
+    "type": "file",
+    "source": "{{user `puppet_path`}}/hieradata",
+    "destination": "/tmp"
+  },{
+    "type": "shell",
+    "inline": [
+      "sudo apt-get update",
+      "sudo apt-get install -y puppet augeas-tools augeas-lenses ruby-augeas python-pip",
+      "sudo pip install awscli",
+      "sudo gem install deep_merge hiera-file hiera-eyaml",
+      "sudo mkdir -p /etc/puppet/environments/production",
+      "sudo mkdir -p /etc/puppet/secure",
+      "sudo ln -s /tmp/hieradata /etc/puppet/environments/production/hieradata"
+    ]
+  },{
+    "type": "puppet-masterless",
+    "manifest_file": "{{user `puppet_path`}}/manifests/site.pp",
+    "hiera_config_path": "{{user `puppet_path`}}/hiera.yaml",
+    "module_paths": ["{{user `puppet_path`}}/site/", "{{user `puppet_path`}}/modules/"],
+    "extra_arguments": ["--parser future"],
+    "facter": {"role": "{{user `profile`}}"},
+    "working_directory": "/tmp/"
+  }]
+}

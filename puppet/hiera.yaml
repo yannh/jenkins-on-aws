@@ -1,0 +1,22 @@
+---
+:backends:
+  - eyaml
+  - file
+
+:hierarchy:
+  - 'roles/%{::role}'
+  - 'defaults'
+
+:eyaml:
+  :datadir: '/etc/puppet/environments/%{environment}/hieradata'
+  :pkcs7_private_key: /etc/puppet/secure/keys/private_key.pkcs7.pem
+  :pkcs7_public_key:  /etc/puppet/secure/keys/public_key.pkcs7.pem
+  :extension: 'yaml'
+
+:file:
+  :datadir: '/etc/puppet/environments/%{environment}/hieradata'
+  :interpolate: false
+
+# may also be deep or deeper, native: first match wins
+:merge_behavior: deeper
+

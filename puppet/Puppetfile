@@ -1,0 +1,10 @@
+forge "https://forgeapi.puppetlabs.com"
+
+mod "puppetlabs/apt",
+  :git => "https://github.com/puppetlabs/puppetlabs-apt.git"
+mod "puppetlabs/java",
+  :git => "https://github.com/puppetlabs/puppetlabs-java.git"
+mod "jenkinsci/jenkins",
+  :git => "https://github.com/jenkinsci/puppet-jenkins.git"
+mod "garethr/docker",
+  :git => "https://github.com/garethr/garethr-docker.git"
