@@ -25,7 +25,7 @@
     },
     "MasterInstanceAMI" : {
       "Type" : "AWS::EC2::Image::Id",
-      "Description" : "AMI to use for the Jenkins master."
+      "Description" : "AMI to use for the Jenkins master"
     },
     "JenkinsMasterKeyName" : {
       "Type" : "AWS::EC2::KeyPair::KeyName",
@@ -35,6 +35,11 @@
       "Type" : "String",
       "Description" : "Size of the root disk for the Jenkins Master",
       "Default": "20"
+    },
+    "WhiteListedCIDR" : {
+      "Type" : "String",
+      "Description" : "Network allowed to access Jenkins",
+      "Default": "0.0.0.0/0"
     }
   },
   "Resources": {
@@ -44,6 +49,57 @@
          "GroupDescription" : "Security group for jenkins cluster",
          "VpcId" : {"Ref": "VPCID"}
       }
+    },
+    "JenkinsInterconnect": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "SourceSecurityGroupId": {"Ref": "JenkinsSecurityGroup"},
+        "GroupId": {"Ref": "JenkinsSecurityGroup"},
+        "IpProtocol": "tcp",
+        "FromPort": "1",
+        "ToPort": "65534"
+      },
+      "DependsOn": ["JenkinsSecurityGroup"]
+    },
+    "JenkinsLBSecurityGroup": {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+         "GroupDescription" : "Security group for jenkins lb",
+         "SecurityGroupIngress" : [{
+           "CidrIp" : {"Ref": "WhiteListedCIDR"},
+           "IpProtocol" : "tcp",
+           "FromPort" : 80,
+           "ToPort" : 80
+         }],
+         "VpcId" : {"Ref": "VPCID"}
+      }
+    },
+    "JenkinsLBToMasterIngress": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "SourceSecurityGroupId": {"Ref": "JenkinsLBSecurityGroup"},
+        "GroupId": {"Ref": "JenkinsSecurityGroup"},
+        "IpProtocol": "tcp",
+        "FromPort": "8080",
+        "ToPort": "8080"
+      },
+      "DependsOn": ["JenkinsSecurityGroup", "JenkinsLBSecurityGroup"]
+    },
+    "JenkinsLB": {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties": {
+        "Instances" : [{"Ref": "JenkinsMaster"}],
+        "Listeners" : [{
+            "LoadBalancerPort" : "80",
+            "Protocol" : "HTTP",
+            "InstancePort" : "8080",
+            "InstanceProtocol": "HTTP"
+        }],
+        "Subnets": [{"Ref": "JenkinsPublicSubnet"}],
+        "SecurityGroups" : [{"Ref": "JenkinsLBSecurityGroup"}],
+        "Scheme": "internet-facing",
+      },
+      "DependsOn" : ["JenkinsMaster"]
     },
     "JenkinsEBS": {
        "Type":"AWS::EC2::Volume",
