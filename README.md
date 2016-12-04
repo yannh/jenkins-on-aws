@@ -1,3 +1,5 @@
+![Travis status](https://api.travis-ci.org/yannh/jenkins-on-aws.svg?branch=master)
+
 # Jenkins on AWS - An opinionated guide
 
 There are many ways to deploy Jenkins on AWS, in this case we are using:
