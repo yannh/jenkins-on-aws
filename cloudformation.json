@@ -387,7 +387,7 @@
                 "    for snapshot in jenkins_snapshots:",
                 "      now = datetime.datetime.utcnow()",
                 { "Fn::Join": ["", ["      if (now - snapshot.start_time.replace(tzinfo=None) > datetime.timedelta(days = ", {"Ref": "SnapshotsMaxAge"}, ")):"]]},
-                "        print(snapshot.description)",
+                "        ec2.delete_snapshot(snapshot.id)",
                 "    return 0"]]}},
           "Description": "Clean up old jenkins snapshots",
           "Handler": "index.lambda_handler",
