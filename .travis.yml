@@ -1,0 +1,14 @@
+addons:
+  apt:
+    packages:
+    - jq
+    - puppet-common
+
+before_install:
+  - gem install puppet-lint
+
+script:
+  - jq . cloudformation.json > /dev/null
+  - find puppet/manifests/ puppet/site/ -iname "*.pp" -exec puppet parser validate {} \;
+  - find puppet/manifests/ puppet/site/ -iname "*.pp" -exec puppet-lint --no-80chars-check --no-documentation-check {} \;
+
