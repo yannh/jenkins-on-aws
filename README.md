@@ -1,4 +1,4 @@
-![Travis status](https://api.travis-ci.org/yannh/jenkins-on-aws.svg?branch=master)
+[![Build Status](https://travis-ci.org/yannh/jenkins-on-aws.svg?branch=master)](https://travis-ci.org/yannh/jenkins-on-aws)
 
 # Jenkins on AWS - An opinionated guide
 
